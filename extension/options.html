@@ -48,6 +48,9 @@
       #status { font-size: 13px; color: #1a7f37; }
       #save { margin-left: auto; }
       .star-btn {
+        position: fixed;
+        top: 16px;
+        right: 16px;
         display: inline-flex;
         align-items: center;
         gap: 5px;
@@ -67,6 +70,13 @@
     </style>
   </head>
   <body>
+    <a class="star-btn" href="https://github.com/farshed/glock" target="_blank" rel="noreferrer">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+      </svg>
+      Star on GitHub
+    </a>
+
     <h1>Glock</h1>
 
     <p class="intro">
@@ -83,12 +93,6 @@
     <input id="pat" type="password" placeholder="github_pat_…" autocomplete="off" />
 
     <div class="row">
-      <a class="star-btn" href="https://github.com/farshed/glock" target="_blank" rel="noreferrer">
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
-        </svg>
-        Star on GitHub
-      </a>
       <span id="status"></span>
       <button class="primary" id="save">Save</button>
     </div>
