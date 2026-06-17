@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Glock — Options</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 520px;
+        margin: 32px auto;
+        padding: 0 16px;
+        color: #1f2328;
+      }
+      h1 { font-size: 18px; }
+      label { display: block; margin-top: 16px; font-weight: 600; font-size: 13px; }
+      .hint { font-weight: 400; color: #59636e; font-size: 12px; margin-top: 2px; }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 6px;
+        padding: 6px 8px;
+        font-size: 13px;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+      }
+      .intro {
+        font-size: 13px;
+        color: #1f2328;
+        background: #f6f8fa;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-top: 8px;
+        line-height: 1.5;
+      }
+      .intro a { color: #0969da; }
+      .row { display: flex; gap: 8px; align-items: center; margin-top: 24px; }
+      button {
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 6px;
+        border: 1px solid #d0d7de;
+        background: #f6f8fa;
+        cursor: pointer;
+      }
+      button.primary { background: #1f883d; border-color: #1f883d; color: #fff; }
+      #status { margin-left: 8px; font-size: 13px; color: #1a7f37; }
+      footer { margin-top: 32px; }
+      .star-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1f2328;
+        text-decoration: none;
+        background: #f6f8fa;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      }
+      .star-btn svg { color: #eac54f; }
+      .star-btn:hover { background: #f3f4f6; border-color: #afb8c1; }
+      .star-btn:active { transform: translateY(1px); }
+    </style>
+  </head>
+  <body>
+    <h1>Glock</h1>
+
+    <p class="intro">
+      To count <strong>private</strong> repositories, add a token: open
+      <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer">
+        github.com/settings/tokens</a>, generate a fine-grained token with
+      <strong>Contents: Read-only</strong> access, and paste it below. Public
+      repositories work without one.
+    </p>
+
+    <label for="pat">Personal Access Token
+      <div class="hint">Used only to read your private repos. Stored locally in this browser and never shared.</div>
+    </label>
+    <input id="pat" type="password" placeholder="github_pat_…" autocomplete="off" />
+
+    <div class="row">
+      <button class="primary" id="save">Save</button>
+      <span id="status"></span>
+    </div>
+
+    <footer>
+      <a class="star-btn" href="https://github.com/farshed/glock" target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+        </svg>
+        Star this repo on GitHub
+      </a>
+    </footer>
+
+    <script src="options.js"></script>
+  </body>
+</html>
