@@ -3,7 +3,7 @@
 
   <h1>Glock</h1>
 
-  <p>A lines-of-code counter for GitHub repositories.</p>
+  <p>GitHub lines-of-code counter.</p>
 </div>
 
 ---
