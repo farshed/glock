@@ -4,7 +4,7 @@ mod git;
 use axum::{
     Json, Router,
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -62,6 +62,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
+        .route("/privacy-policy", get(privacy_policy))
         .route("/count", post(count_handler));
 
     let addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:4000".into());
@@ -70,6 +71,11 @@ async fn main() {
         .expect("failed to bind listener");
     tracing::info!("listening on {addr}");
     axum::serve(listener, app).await.expect("server error");
+}
+
+/// Serve the privacy policy page (baked into the binary at compile time).
+async fn privacy_policy() -> Html<&'static str> {
+    Html(include_str!("privacy_policy.html"))
 }
 
 async fn count_handler(Json(req): Json<CountRequest>) -> Result<Json<CountResponse>, ApiError> {

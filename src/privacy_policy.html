@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glock — Privacy Policy</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        max-width: 720px;
+        margin: 48px auto;
+        padding: 0 20px;
+        line-height: 1.6;
+        color: #1f2328;
+      }
+      h1 { font-size: 26px; margin-bottom: 4px; }
+      h2 { font-size: 18px; margin-top: 32px; }
+      .updated { color: #59636e; font-size: 14px; margin-top: 0; }
+      code { background: #f6f8fa; padding: 1px 5px; border-radius: 4px; font-size: 90%; }
+      a { color: #0969da; }
+      footer { margin-top: 40px; color: #59636e; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>Glock — Privacy Policy</h1>
+    <p class="updated">Last updated: 17 June 2026</p>
+
+    <p>
+      Glock is a browser extension that displays a lines-of-code badge on GitHub
+      repository pages. This policy explains what data the extension and its
+      companion API handle, and how.
+    </p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li>
+        <strong>Repository identifiers.</strong> When you view a GitHub
+        repository, the <code>owner/repo</code> name of that repository is sent
+        to the Glock API so it can count its lines of code.
+      </li>
+      <li>
+        <strong>GitHub Personal Access Token (optional).</strong> If you choose
+        to add a token to count private repositories, that token is stored
+        locally in your browser and sent to the Glock API only to clone the
+        repositories you view.
+      </li>
+    </ul>
+    <p>
+      We do not collect names, email addresses, browsing history, analytics, or
+      any other personal information.
+    </p>
+
+    <h2>How your data is used</h2>
+    <ul>
+      <li>
+        Repository identifiers and (when provided) your token are used solely to
+        clone the requested repository, count its lines of code, and return that
+        number to the extension.
+      </li>
+      <li>
+        Cloned repositories are written to a temporary directory and deleted
+        immediately after counting. They are not retained.
+      </li>
+      <li>
+        Your token is never logged. It is held only for the duration of a clone
+        request and is not written to disk by the API.
+      </li>
+    </ul>
+
+    <h2>Storage</h2>
+    <p>
+      Your Personal Access Token and cached line counts are stored locally in
+      your browser using the extension storage API. They never leave your device
+      except to make the requests described above, and you can remove them at any
+      time by clearing them in the extension options or removing the extension.
+    </p>
+
+    <h2>Sharing</h2>
+    <p>
+      We do not sell, rent, or share your data with any third party. Data is sent
+      only to the Glock API instance that you configure, and to GitHub when
+      cloning a repository.
+    </p>
+
+    <h2>Data retention</h2>
+    <p>
+      The API does not persist repository contents, identifiers, or tokens beyond
+      the lifetime of an individual request. Locally stored data remains in your
+      browser until you delete it.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Questions about this policy can be sent to
+      <a href="mailto:mail@farshed.me">mail@farshed.me</a>.
+    </p>
+
+    <footer>Glock is open source. This policy applies to the official extension and API.</footer>
+  </body>
+</html>
