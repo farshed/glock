@@ -10,4 +10,4 @@ Glock is a chrome extension that displays LOC on GitHub repos. It uses [tokei](h
 
 ## Caching
 
-Counts for large repos are cached for 24h, while smaller ones refresh every few minutes. Because of this, the badge may not reflect brand-new commits right away.
+Counts for large repos are cached for 24h, while smaller ones refresh every few minutes. Because of this, the badge may not reflect new commits right away.
