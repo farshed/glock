@@ -4,7 +4,7 @@
 // so the glock API needs no CORS headers of its own.
 
 const DEFAULTS = {
-  apiBase: "http://localhost:4000",
+  apiBase: "https://glock.farshed.me",
   pat: "",
   ttlHours: 24,
 };
