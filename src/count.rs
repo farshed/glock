@@ -4,7 +4,7 @@ use serde::Serialize;
 use tokei::{Config, Languages};
 
 /// Aggregated line counts for a repository, as reported by tokei.
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Counts {
     /// Lines of actual code — the headline number.
     pub code: usize,
