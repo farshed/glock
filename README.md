@@ -14,12 +14,11 @@ including your access token — is sent anywhere except GitHub.
 
 ## Layout
 
-| Path             | What it is                                                       |
-| ---------------- | ---------------------------------------------------------------- |
-| `extension/`     | The Chrome extension. See `extension/README.md`.                  |
-| `wasm/`          | Thin Rust shim exposing tokei's counting core to JavaScript.      |
-| `vendor/tokei/`  | Patched tokei — see `vendor/tokei/VENDORED.md`.                   |
-| `src/`           | The original HTTP server. No longer used by the extension.        |
+| Path         | What it is                                                    |
+| ------------ | ------------------------------------------------------------- |
+| `extension/` | The Chrome extension. See `extension/README.md`.               |
+| `src/`       | Thin Rust shim exposing tokei's counting core to JavaScript.   |
+| `scripts/`   | `build-wasm.sh` builds the module, `package.sh` zips the ext.  |
 
 ## Building
 
@@ -28,15 +27,17 @@ rustup target add wasm32-unknown-unknown   # once
 ./scripts/build-wasm.sh                    # writes extension/tokei.wasm
 ```
 
-## Why tokei is vendored
+## Why tokei comes from a fork
 
-tokei 14 declares its CLI-only dependencies unconditionally, so the library
-cannot be built for `wasm32-unknown-unknown`: `term_size` needs `libc` ioctls,
-and `etcetera` pulls in `home`, whose `home_dir_inner` is gated on
-`#[cfg(windows)]`/`#[cfg(unix)]`. The vendored copy makes them optional and adds
-`LanguageType::from_shebang_slice` so extensionless scripts can be detected
-without a filesystem. All three changes are upstreamable; once merged, replace
-the `[patch.crates-io]` path in `Cargo.toml` with a version bump.
+tokei 14 doesn't build for wasm. `term_size` uses libc ioctls that don't exist
+there, and `etcetera` depends on `home`, which only supports Windows and Unix.
+Neither is needed by the library — they're only used by tokei's CLI.
+
+[Our fork](https://github.com/farshed/tokei) makes them optional and adds
+`LanguageType::from_shebang_slice`, so files with no extension can be identified
+without opening them. `Cargo.toml` points at it with `[patch.crates-io]`, and
+`Cargo.lock` pins the exact commit. Once the patch is merged upstream, drop the
+patch section and bump the version.
 
 ## Accuracy
 

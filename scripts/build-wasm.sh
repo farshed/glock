@@ -10,9 +10,9 @@ if ! rustup target list --installed | grep -qx wasm32-unknown-unknown; then
   exit 1
 fi
 
-cargo build --release --target wasm32-unknown-unknown -p glock-wasm
+cargo build --release --target wasm32-unknown-unknown
 
-SRC=target/wasm32-unknown-unknown/release/glock_wasm.wasm
+SRC=target/wasm32-unknown-unknown/release/glock.wasm
 DEST=extension/tokei.wasm
 cp "$SRC" "$DEST"
 

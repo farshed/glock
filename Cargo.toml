@@ -2,23 +2,25 @@
 name = "glock"
 version = "0.1.0"
 edition = "2024"
+description = "Filesystem-free tokei counting, compiled to wasm for the Glock extension."
 
-[workspace]
-members = ["wasm"]
-exclude = ["vendor/tokei"]
-
-# tokei 14 cannot be built for wasm32 as published; see vendor/tokei/VENDORED.md.
-[patch.crates-io]
-tokei = { path = "vendor/tokei" }
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies]
-axum = "0.8"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "process"] }
-tokei = "14"
-tempfile = "3"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-lru = "0.12"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# Disabling the CLI feature is what keeps the filesystem- and terminal-bound
+# dependencies out of the wasm build.
+tokei = { version = "14", default-features = false }
+encoding_rs_io = "0.1.7"
+
+# tokei 14 can't be built for wasm32 as published: term_size needs libc ioctls
+# that don't exist there, and etcetera pulls in home, which has no wasm support.
+# This fork makes both optional. Patch submitted upstream; drop this once merged.
+[patch.crates-io]
+tokei = { git = "https://github.com/farshed/tokei" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+strip = true
