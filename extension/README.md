@@ -69,4 +69,4 @@ Click the extension's toolbar icon (or use **Extension options**) to set:
   only to GitHub. It also raises the API rate limit from 60 to 5,000 requests
   per hour.
 - **Maximum repository size** — repositories larger than this show no badge,
-  since counting downloads the whole archive. Defaults to 10 MB, up to 100 MB.
+  since counting downloads the whole archive. Defaults to 50 MB, up to 500 MB.

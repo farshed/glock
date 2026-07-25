@@ -4,8 +4,8 @@
   margin-left: 8px;
   padding: 0 9px;
   height: 22px;
-  position: relative;
-  top: 4px; /* nudge lower than the breadcrumb text */
+  /* Crumb may be flex or inline; content.js corrects any remainder. */
+  align-self: center;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
   font-size: 11.5px;
@@ -19,10 +19,23 @@
   user-select: none;
   -webkit-font-smoothing: antialiased;
 
-  /* Light theme (default). */
   color: #1f883d;
   border: 2px solid #1f883d;
   background-color: transparent;
+}
+
+/* Failures read as a status, not a count. */
+.gh-loc-badge--error {
+  color: #59636e;
+  border-color: #59636e;
+  border-style: dashed;
+  cursor: help;
+}
+
+/* GitHub attaches "/" separators via pseudo-elements; keep them off the badge. */
+.gh-loc-badge::before,
+.gh-loc-badge::after {
+  content: none !important;
 }
 
 /* Dark theme. */
@@ -31,10 +44,20 @@ html[data-color-mode="dark"] .gh-loc-badge {
   border-color: #238636;
 }
 
-/* Auto color mode follows the OS preference. */
+html[data-color-mode="dark"] .gh-loc-badge--error {
+  color: #8b949e;
+  border-color: #6e7681;
+}
+
+/* Auto mode follows the OS preference. */
 @media (prefers-color-scheme: dark) {
   html[data-color-mode="auto"] .gh-loc-badge {
     color: #238636;
     border-color: #238636;
+  }
+
+  html[data-color-mode="auto"] .gh-loc-badge--error {
+    color: #8b949e;
+    border-color: #6e7681;
   }
 }

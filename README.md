@@ -61,5 +61,5 @@ on repositories chosen to exercise each rule:
 ## Caching
 
 Counts are cached in the browser for 30 minutes, so the badge may not reflect
-new commits right away. Repositories above the configured size limit (10 MB by
+new commits right away. Repositories above the configured size limit (50 MB by
 default) show no badge, since counting means downloading the whole archive.

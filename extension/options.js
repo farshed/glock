@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
-const DEFAULT_MAX_REPO_MB = 10;
-const LIMIT_MAX_REPO_MB = 100;
+const DEFAULT_MAX_REPO_MB = 50;
+const LIMIT_MAX_REPO_MB = 500;
 
 function flash(msg) {
   const el = $("status");

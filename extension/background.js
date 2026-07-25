@@ -1,18 +1,13 @@
-// Service worker: fetches repository tarballs from GitHub and counts them
-// locally with tokei compiled to wasm.
-
 import { countTarball } from "./lib/counter.js";
 
 const DEFAULTS = {
   pat: "",
   ttlMinutes: 30,
   // GitHub reports repo size in KB.
-  maxRepoKb: 10 * 1024,
+  maxRepoKb: 50 * 1024,
 };
 
-// Counting downloads the whole archive, so this is a hard ceiling regardless of
-// what is in storage.
-const LIMIT_MAX_REPO_KB = 100 * 1024;
+const LIMIT_MAX_REPO_KB = 500 * 1024;
 
 async function getConfig() {
   const stored = await chrome.storage.local.get(["pat", "ttlMinutes", "maxRepoKb"]);
@@ -46,7 +41,6 @@ async function handleGetLoc(repo) {
   }
 
   const result = await countRepo(cfg, repo);
-  // Only cache successes; transient failures should be retried next time.
   if (result.ok) {
     await chrome.storage.local.set({ [key]: { at: Date.now(), result } });
   }
@@ -62,30 +56,44 @@ function authHeaders(cfg) {
 async function countRepo(cfg, repo) {
   const [owner, name] = repo.split("/");
 
-  // One metadata request gives both the size and the default branch.
   let meta;
   try {
     const resp = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
       headers: authHeaders(cfg),
     });
+    // A 403 with no quota left is a rate limit, not a permissions problem.
+    if (resp.status === 403 && resp.headers.get("x-ratelimit-remaining") === "0") {
+      const reset = Number(resp.headers.get("x-ratelimit-reset")) * 1000;
+      const mins = reset ? Math.max(1, Math.ceil((reset - Date.now()) / 60000)) : null;
+      return {
+        ok: false,
+        status: resp.status,
+        reason: "rate_limited",
+        error: `GitHub rate limit reached${mins ? `, resets in ~${mins} min` : ""}.` +
+          (cfg.pat ? "" : " Adding a token raises it from 60 to 5,000 requests/hour."),
+      };
+    }
     if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
       return {
         ok: false,
         status: resp.status,
+        reason: "no_access",
         error: `Cannot access ${repo} (check that it exists and the token has access)`,
       };
     }
-    if (!resp.ok) return { ok: false, status: resp.status, error: `HTTP ${resp.status}` };
+    if (!resp.ok) {
+      return { ok: false, status: resp.status, reason: "github_error", error: `HTTP ${resp.status}` };
+    }
     meta = await resp.json();
   } catch (e) {
-    return { ok: false, status: 0, error: `Cannot reach GitHub: ${e}` };
+    return { ok: false, status: 0, reason: "network", error: `Cannot reach GitHub: ${e}` };
   }
 
   if (typeof meta.size === "number" && meta.size > cfg.maxRepoKb) {
     return {
       ok: false,
       status: 0,
-      tooLarge: true,
+      reason: "too_large",
       error: `${repo} is ~${Math.round(meta.size / 1024)}MB, over the ${
         Math.round(cfg.maxRepoKb / 1024)
       }MB limit`,
@@ -101,12 +109,13 @@ async function countRepo(cfg, repo) {
       return {
         ok: false,
         status: resp.status,
+        reason: "download_failed",
         error: `Tarball fetch failed: HTTP ${resp.status}`,
       };
     }
     const counts = await countTarball(resp.body);
     return { ok: true, status: 200, repo, ...counts };
   } catch (e) {
-    return { ok: false, status: 0, error: `Count failed: ${e}` };
+    return { ok: false, status: 0, reason: "count_failed", error: `Count failed: ${e}` };
   }
 }
