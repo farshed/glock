@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
-const DEFAULT_MAX_REPO_KB = 20000;
+const DEFAULT_MAX_REPO_MB = 10;
+const LIMIT_MAX_REPO_MB = 100;
 
 function flash(msg) {
   const el = $("status");
@@ -9,23 +10,25 @@ function flash(msg) {
 }
 
 async function load() {
-  const { pat = "", maxRepoKb = DEFAULT_MAX_REPO_KB } = await chrome.storage.local.get([
-    "pat",
-    "maxRepoKb",
-  ]);
+  const { pat = "", maxRepoKb } = await chrome.storage.local.get(["pat", "maxRepoKb"]);
   $("pat").value = pat;
-  $("maxRepoMb").value = Math.round(maxRepoKb / 1024);
+  $("maxRepoMb").value = maxRepoKb ? Math.round(maxRepoKb / 1024) : DEFAULT_MAX_REPO_MB;
 }
 
 async function save() {
-  // Stored in KB to match what the GitHub API reports.
   const mb = Number($("maxRepoMb").value);
-  const maxRepoKb = Number.isFinite(mb) && mb > 0
-    ? Math.round(mb * 1024)
-    : DEFAULT_MAX_REPO_KB;
+  const clamped = Number.isFinite(mb) && mb > 0
+    ? Math.min(mb, LIMIT_MAX_REPO_MB)
+    : DEFAULT_MAX_REPO_MB;
 
-  await chrome.storage.local.set({ pat: $("pat").value.trim(), maxRepoKb });
-  flash("Saved");
+  // Stored in KB to match what the GitHub API reports.
+  await chrome.storage.local.set({
+    pat: $("pat").value.trim(),
+    maxRepoKb: clamped * 1024,
+  });
+
+  $("maxRepoMb").value = clamped;
+  flash(clamped < mb ? `Saved — capped at ${LIMIT_MAX_REPO_MB} MB` : "Saved");
 }
 
 $("save").addEventListener("click", save);

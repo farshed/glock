@@ -7,12 +7,18 @@ const DEFAULTS = {
   pat: "",
   ttlMinutes: 30,
   // GitHub reports repo size in KB.
-  maxRepoKb: 20000,
+  maxRepoKb: 10 * 1024,
 };
+
+// Counting downloads the whole archive, so this is a hard ceiling regardless of
+// what is in storage.
+const LIMIT_MAX_REPO_KB = 100 * 1024;
 
 async function getConfig() {
   const stored = await chrome.storage.local.get(["pat", "ttlMinutes", "maxRepoKb"]);
-  return { ...DEFAULTS, ...stored };
+  const cfg = { ...DEFAULTS, ...stored };
+  cfg.maxRepoKb = Math.min(cfg.maxRepoKb || DEFAULTS.maxRepoKb, LIMIT_MAX_REPO_KB);
+  return cfg;
 }
 
 const cacheKey = (repo) => `loc:${repo.toLowerCase()}`;

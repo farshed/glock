@@ -23,70 +23,66 @@
   </head>
   <body>
     <h1>Glock — Privacy Policy</h1>
-    <p class="updated">Last updated: 17 June 2026</p>
+    <p class="updated">Last updated: 25 July 2026</p>
 
     <p>
-      Glock is a browser extension that displays a lines-of-code badge on GitHub
-      repository pages. This policy explains what data the extension and its
-      companion API handle, and how.
+      Glock is a browser extension that shows a lines-of-code badge on GitHub
+      repository pages. It does all of its work on your own machine.
     </p>
 
     <h2>What we collect</h2>
-    <ul>
-      <li>
-        <strong>Repository identifiers.</strong> When you view a GitHub
-        repository, the <code>owner/repo</code> name of that repository is sent
-        to the Glock API so it can count its lines of code.
-      </li>
-      <li>
-        <strong>GitHub Personal Access Token (optional).</strong> If you choose
-        to add a token to count private repositories, that token is stored
-        locally in your browser and sent to the Glock API only to clone the
-        repositories you view.
-      </li>
-    </ul>
     <p>
-      We do not collect names, email addresses, browsing history, analytics, or
-      any other personal information.
+      Nothing. Glock has no server and no backend. We do not receive the
+      repositories you visit, your access token, or anything else. There is no
+      analytics, no tracking, and no telemetry of any kind.
     </p>
 
-    <h2>How your data is used</h2>
+    <h2>How it works</h2>
+    <p>
+      When you open a repository page, the extension asks GitHub for the
+      repository's size, downloads its archive, and counts the lines inside your
+      browser using a WebAssembly build of
+      <a href="https://github.com/XAMPPRocky/tokei" target="_blank" rel="noreferrer">tokei</a>.
+      Repository contents are held in memory only for as long as the count takes,
+      and are never written to disk or sent anywhere.
+    </p>
+    <p>
+      The only network requests it makes are to
+      <code>api.github.com</code> and <code>codeload.github.com</code>. Those
+      requests are subject to
+      <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noreferrer">GitHub's privacy policy</a>.
+    </p>
+
+    <h2>Your GitHub token</h2>
+    <p>
+      You can optionally add a personal access token so private repositories can
+      be counted. It is stored locally in your browser and sent only to GitHub,
+      as the authorization header on the requests above. It is never sent to us
+      or to anyone else.
+    </p>
+    <p>
+      Delete it at any time by clearing the field in the extension's options, or
+      by removing the extension.
+    </p>
+
+    <h2>What is stored on your device</h2>
     <ul>
+      <li>Your access token, if you added one.</li>
+      <li>Your maximum repository size setting.</li>
       <li>
-        Repository identifiers and (when provided) your token are used solely to
-        clone the requested repository, count its lines of code, and return that
-        number to the extension.
-      </li>
-      <li>
-        Cloned repositories are written to a temporary directory and deleted
-        immediately after counting. They are not retained.
-      </li>
-      <li>
-        Your token is never logged. It is held only for the duration of a clone
-        request and is not written to disk by the API.
+        Line counts for repositories you have viewed, cached for 30 minutes so
+        the badge does not have to re-download an archive on every page view.
       </li>
     </ul>
-
-    <h2>Storage</h2>
     <p>
-      Your Personal Access Token and cached line counts are stored locally in
-      your browser using the extension storage API. They never leave your device
-      except to make the requests described above, and you can remove them at any
-      time by clearing them in the extension options or removing the extension.
+      All of this lives in the browser's extension storage and stays on your
+      device. Removing the extension removes it.
     </p>
 
     <h2>Sharing</h2>
     <p>
-      We do not sell, rent, or share your data with any third party. Data is sent
-      only to the Glock API instance that you configure, and to GitHub when
-      cloning a repository.
-    </p>
-
-    <h2>Data retention</h2>
-    <p>
-      The API does not persist repository contents, identifiers, or tokens beyond
-      the lifetime of an individual request. Locally stored data remains in your
-      browser until you delete it.
+      We have nothing to share. No data reaches us, so none of it can be sold,
+      rented, or passed to a third party.
     </p>
 
     <h2>Contact</h2>
@@ -95,6 +91,9 @@
       <a href="mailto:mail@farshed.me">mail@farshed.me</a>.
     </p>
 
-    <footer>Glock is open source. This policy applies to the official extension and API.</footer>
+    <footer>
+      Glock is open source — the code that does all of the above is at
+      <a href="https://github.com/farshed/glock" target="_blank" rel="noreferrer">github.com/farshed/glock</a>.
+    </footer>
   </body>
 </html>
