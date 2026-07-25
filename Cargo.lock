@@ -663,6 +663,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "glock-wasm"
+version = "0.1.0"
+dependencies = [
+ "encoding_rs_io",
+ "tokei",
+]
+
+[[package]]
 name = "grep-matcher"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2075,8 +2083,6 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tokei"
 version = "14.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4de7875c0c312f30e090edb0da5df9f6586033132d36d94c8f9133e82826797"
 dependencies = [
  "aho-corasick",
  "arbitrary",

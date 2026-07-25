@@ -3,6 +3,14 @@ name = "glock"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = ["wasm"]
+exclude = ["vendor/tokei"]
+
+# tokei 14 cannot be built for wasm32 as published; see vendor/tokei/VENDORED.md.
+[patch.crates-io]
+tokei = { path = "vendor/tokei" }
+
 [dependencies]
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "process"] }

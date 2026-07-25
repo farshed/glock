@@ -80,6 +80,9 @@
     <h1>Glock</h1>
 
     <p class="intro">
+      Counting happens entirely in your browser — repository contents and your
+      token are never sent anywhere except GitHub.
+      <br /><br />
       To count <strong>private</strong> repositories, add a token: open
       <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer">
         github.com/settings/tokens</a>, generate a fine-grained token with
@@ -91,6 +94,14 @@
       <div class="hint">Used only to read your private repos. Stored locally in this browser and never shared.</div>
     </label>
     <input id="pat" type="password" placeholder="github_pat_…" autocomplete="off" />
+
+    <label for="maxRepoMb">Maximum repository size (MB)
+      <div class="hint">
+        Counting downloads the repository archive, so larger repos mean larger
+        downloads. Repositories above this size show no badge.
+      </div>
+    </label>
+    <input id="maxRepoMb" type="number" min="1" max="500" step="1" />
 
     <div class="row">
       <span id="status"></span>

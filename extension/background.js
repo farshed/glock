@@ -1,22 +1,22 @@
-// Service worker: owns all network access and caching. Content scripts ask it
-// for a repo's LOC count via runtime messaging. Because the extension holds
-// host_permissions for the API host, these fetches are exempt from page CORS,
-// so the glock API needs no CORS headers of its own.
+// Service worker: fetches repository tarballs from GitHub and counts them
+// locally with tokei compiled to wasm.
+
+import { countTarball } from "./lib/counter.js";
 
 const DEFAULTS = {
-  apiBase: "https://glock.farshed.me",
   pat: "",
-  ttlHours: 24,
+  ttlMinutes: 30,
+  // GitHub reports repo size in KB.
+  maxRepoKb: 20000,
 };
 
 async function getConfig() {
-  const stored = await chrome.storage.local.get(["apiBase", "pat", "ttlHours"]);
+  const stored = await chrome.storage.local.get(["pat", "ttlMinutes", "maxRepoKb"]);
   return { ...DEFAULTS, ...stored };
 }
 
 const cacheKey = (repo) => `loc:${repo.toLowerCase()}`;
 
-// Clicking the toolbar icon opens the options page (no popup configured).
 chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -32,14 +32,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 async function handleGetLoc(repo) {
   const cfg = await getConfig();
   const key = cacheKey(repo);
-  const ttlMs = cfg.ttlHours * 3600 * 1000;
+  const ttlMs = cfg.ttlMinutes * 60 * 1000;
 
   const cached = (await chrome.storage.local.get(key))[key];
   if (cached && ttlMs > 0 && Date.now() - cached.at < ttlMs) {
     return { ...cached.result, cached: true };
   }
 
-  const result = await fetchLoc(cfg, repo);
+  const result = await countRepo(cfg, repo);
   // Only cache successes; transient failures should be retried next time.
   if (result.ok) {
     await chrome.storage.local.set({ [key]: { at: Date.now(), result } });
@@ -47,44 +47,60 @@ async function handleGetLoc(repo) {
   return result;
 }
 
-async function fetchLoc(cfg, repo) {
-  const base = cfg.apiBase.replace(/\/+$/, "");
-  const body = { repo };
-  if (cfg.pat) body.pat = cfg.pat;
+function authHeaders(cfg) {
+  const headers = { accept: "application/vnd.github+json" };
+  if (cfg.pat) headers.authorization = `Bearer ${cfg.pat}`;
+  return headers;
+}
 
-  let resp;
+async function countRepo(cfg, repo) {
+  const [owner, name] = repo.split("/");
+
+  // One metadata request gives both the size and the default branch.
+  let meta;
   try {
-    resp = await fetch(`${base}/count`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+    const resp = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
+      headers: authHeaders(cfg),
     });
-  } catch (_e) {
-    return { ok: false, status: 0, error: `Cannot reach the LOC API at ${base}` };
+    if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
+      return {
+        ok: false,
+        status: resp.status,
+        error: `Cannot access ${repo} (check that it exists and the token has access)`,
+      };
+    }
+    if (!resp.ok) return { ok: false, status: resp.status, error: `HTTP ${resp.status}` };
+    meta = await resp.json();
+  } catch (e) {
+    return { ok: false, status: 0, error: `Cannot reach GitHub: ${e}` };
   }
 
-  let data = null;
-  try {
-    data = await resp.json();
-  } catch (_e) {
-    // non-JSON body; fall back to status text below
-  }
-
-  if (!resp.ok) {
+  if (typeof meta.size === "number" && meta.size > cfg.maxRepoKb) {
     return {
       ok: false,
-      status: resp.status,
-      error: (data && data.error) || `HTTP ${resp.status}`,
+      status: 0,
+      tooLarge: true,
+      error: `${repo} is ~${Math.round(meta.size / 1024)}MB, over the ${
+        Math.round(cfg.maxRepoKb / 1024)
+      }MB limit`,
     };
   }
 
-  return {
-    ok: true,
-    status: 200,
-    repo: data.repo,
-    code: data.code,
-    comments: data.comments,
-    blanks: data.blanks,
-    total: data.total,
-  };
+  const ref = meta.default_branch || "HEAD";
+  const url = `https://codeload.github.com/${owner}/${name}/tar.gz/${ref}`;
+
+  try {
+    const resp = await fetch(url, { headers: cfg.pat ? authHeaders(cfg) : {} });
+    if (!resp.ok) {
+      return {
+        ok: false,
+        status: resp.status,
+        error: `Tarball fetch failed: HTTP ${resp.status}`,
+      };
+    }
+    const counts = await countTarball(resp.body);
+    return { ok: true, status: 200, repo, ...counts };
+  } catch (e) {
+    return { ok: false, status: 0, error: `Count failed: ${e}` };
+  }
 }
