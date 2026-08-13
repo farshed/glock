@@ -20,13 +20,9 @@
     return `${owner}/${repo}`;
   }
 
-  // The badge goes inside the final crumb, not alongside it: GitHub draws the
-  // "/" separators with a pseudo-element on each list item, so a direct child of
-  // the <ol> stops the last crumb being :last-child and paints a stray slash.
   const findNav = () => {
     const list = document.querySelector('[data-component="Breadcrumbs"] ol');
-    if (list) return list.querySelector("li:last-of-type") || list;
-    return document.querySelector('[data-component="Breadcrumbs"]');
+    return list || document.querySelector('[data-component="Breadcrumbs"]');
   };
 
   const ERROR_LABELS = {
@@ -49,6 +45,11 @@
     return `${(mb / 1024).toFixed(1)} GB`;
   };
 
+  const fmtEst = (n) =>
+    n < 1_000_000
+      ? fmt(n)
+      : new Intl.NumberFormat("en", { notation: "compact", maximumSignificantDigits: 2 }).format(n);
+
   const removeBadge = () => document.getElementById(BADGE_ID)?.remove();
 
   function showBadge(repo, nav, res) {
@@ -58,11 +59,25 @@
     const existing = document.getElementById(BADGE_ID);
     if (existing) existing.remove();
 
-    const badge = document.createElement("span");
-    badge.id = BADGE_ID;
-    badge.dataset.repo = repo;
+    // Own <li> at the end of the breadcrumb list; the previous crumb is no
+    // longer :last-child, so GitHub paints its "/" separator before the badge.
+    const item = document.createElement("li");
+    item.id = BADGE_ID;
+    item.dataset.repo = repo;
+    item.className = "gh-loc-badge-item";
 
-    if (res.ok) {
+    const badge = document.createElement("span");
+
+    if (res.ok && res.estLoc !== undefined) {
+      const size = fmtSize(res.sizeKb);
+      badge.className = "gh-loc-badge";
+      badge.textContent = `~${fmtEst(res.estLoc)} LOC${size ? ` · ~${size}` : ""}`;
+      badge.title = res.est
+        ? "Estimated from code file sizes — repo is over the size limit, so it" +
+          " was not downloaded and counted exactly." +
+          (res.cached ? "\n(cached)" : "")
+        : "Estimate — exact count in progress…";
+    } else if (res.ok) {
       const size = fmtSize(res.sizeKb);
       badge.className = "gh-loc-badge";
       badge.textContent = `${fmt(res.code)} LOC${size ? ` · ~${size}` : ""}`;
@@ -74,7 +89,7 @@
         (size ? `\nEst. size: ${size}` : "") +
         (res.cached ? "\n(cached)" : "");
     } else {
-        const size = fmtSize(res.sizeKb);
+      const size = fmtSize(res.sizeKb);
       badge.className = "gh-loc-badge gh-loc-badge--error";
       badge.textContent =
         res.reason === "too_large" && size
@@ -83,7 +98,8 @@
       badge.title = res.error || "Could not count this repository";
     }
 
-    nav.appendChild(badge);
+    item.appendChild(badge);
+    nav.appendChild(item);
     centreOnCrumb(badge, nav);
   }
 
@@ -130,6 +146,14 @@
     clearTimeout(timer);
     timer = setTimeout(inject, 250);
   }
+
+  // The exact count arrives after the estimate was answered synchronously.
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.type === "locResult" && msg.repo === currentRepo()) {
+      const nav = findNav();
+      if (nav) showBadge(msg.repo, nav, msg.result);
+    }
+  });
 
   document.addEventListener("turbo:load", scheduleInject);
   document.addEventListener("turbo:render", scheduleInject);

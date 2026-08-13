@@ -32,9 +32,20 @@
   cursor: help;
 }
 
-/* GitHub attaches "/" separators via pseudo-elements; keep them off the badge. */
+.gh-loc-badge-item {
+  display: inline-flex;
+  align-items: center;
+  list-style: none;
+}
+
+/* GitHub attaches "/" separators via pseudo-elements on the list items; keep
+   them off the badge, and off the crumb right before it — inserting our <li>
+   stops that crumb being :last-child, which would paint a stray slash. */
+.gh-loc-badge-item::before,
+.gh-loc-badge-item::after,
 .gh-loc-badge::before,
-.gh-loc-badge::after {
+.gh-loc-badge::after,
+li:has(+ .gh-loc-badge-item)::after {
   content: none !important;
 }
 

@@ -9,6 +9,20 @@ const DEFAULTS = {
 
 const LIMIT_MAX_REPO_KB = 500 * 1024;
 
+// Calibrated against tokei's exact counts; code-only bytes cluster at 34–48 per line.
+const BYTES_PER_LOC = 40;
+
+const CODE_EXT = new Set([
+  "rs", "js", "mjs", "cjs", "ts", "tsx", "jsx", "py", "rb", "go", "java",
+  "c", "h", "cpp", "hpp", "cc", "hh", "cs", "php", "swift", "kt", "kts",
+  "scala", "sh", "bash", "zsh", "fish", "ps1", "psm1", "bat", "cmd", "pl",
+  "pm", "lua", "r", "jl", "hs", "ml", "mli", "ex", "exs", "erl", "clj",
+  "cljs", "el", "vim", "sql", "html", "htm", "css", "scss", "sass", "less",
+  "vue", "svelte", "json", "yml", "yaml", "toml", "xml", "ini", "cfg",
+  "proto", "cmake", "make", "mk", "makefile", "gradle", "tf", "dockerfile",
+  "nix", "zig", "d", "v",
+]);
+
 async function getConfig() {
   const stored = await chrome.storage.local.get(["pat", "ttlMinutes", "maxRepoKb"]);
   const cfg = { ...DEFAULTS, ...stored };
@@ -20,32 +34,15 @@ const cacheKey = (repo) => `loc:${repo.toLowerCase()}`;
 
 chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "getLoc" && typeof msg.repo === "string") {
-    handleGetLoc(msg.repo)
+    handleGetLoc(msg.repo, sender.tab?.id)
       .then(sendResponse)
       .catch((err) => sendResponse({ ok: false, status: 0, error: String(err) }));
     return true; // keep the message channel open for the async response
   }
   return false;
 });
-
-async function handleGetLoc(repo) {
-  const cfg = await getConfig();
-  const key = cacheKey(repo);
-  const ttlMs = cfg.ttlMinutes * 60 * 1000;
-
-  const cached = (await chrome.storage.local.get(key))[key];
-  if (cached && ttlMs > 0 && Date.now() - cached.at < ttlMs) {
-    return { ...cached.result, cached: true };
-  }
-
-  const result = await countRepo(cfg, repo);
-  if (result.ok) {
-    await chrome.storage.local.set({ [key]: { at: Date.now(), result } });
-  }
-  return result;
-}
 
 function authHeaders(cfg) {
   const headers = { accept: "application/vnd.github+json" };
@@ -77,13 +74,37 @@ function apiError(resp, repo, cfg) {
   return { ok: false, status: resp.status, reason: "github_error", error: `HTTP ${resp.status}` };
 }
 
-async function countRepo(cfg, repo) {
+function estimateLoc(tree) {
+  let bytes = 0;
+  for (const entry of tree) {
+    if (entry.type !== "blob") continue;
+    const parts = entry.path.split("/");
+    if (parts.some((p) => p.startsWith("."))) continue;
+    const file = parts[parts.length - 1].toLowerCase();
+    const dot = file.lastIndexOf(".");
+    const ext = dot > 0 ? file.slice(dot + 1) : file;
+    if (CODE_EXT.has(ext)) bytes += entry.size || 0;
+  }
+  return Math.round(bytes / BYTES_PER_LOC);
+}
+
+async function handleGetLoc(repo, tabId) {
+  const cfg = await getConfig();
+  const key = cacheKey(repo);
+  const ttlMs = cfg.ttlMinutes * 60 * 1000;
+
+  const cached = (await chrome.storage.local.get(key))[key];
+  if (cached && ttlMs > 0 && Date.now() - cached.at < ttlMs) {
+    return { ...cached.result, cached: true };
+  }
+
   const [owner, name] = repo.split("/");
 
   // Sum of blob sizes in the default branch (HEAD) — the actual checkout size,
   // unlike the metadata endpoint's `size`, which counts the full packed history
   // and over-states it badly. Infinity marks a truncated listing (>100k files).
   let sizeKb;
+  let estLoc;
   try {
     const resp = await fetch(
       `https://api.github.com/repos/${owner}/${name}/git/trees/HEAD?recursive=1`,
@@ -91,9 +112,12 @@ async function countRepo(cfg, repo) {
     );
     if (resp.ok) {
       const data = await resp.json();
-      sizeKb = data.truncated
-        ? Infinity
-        : data.tree.reduce((sum, e) => (e.type === "blob" ? sum + (e.size || 0) : sum), 0) / 1024;
+      if (data.truncated) {
+        sizeKb = Infinity;
+      } else {
+        sizeKb = data.tree.reduce((sum, e) => (e.type === "blob" ? sum + (e.size || 0) : sum), 0) / 1024;
+        estLoc = estimateLoc(data.tree);
+      }
     } else if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
       // Auth and rate-limit problems would hit the metadata call identically.
       return apiError(resp, repo, cfg);
@@ -115,6 +139,12 @@ async function countRepo(cfg, repo) {
   }
 
   if (typeof sizeKb === "number" && sizeKb > cfg.maxRepoKb) {
+    // Too large to download — the estimate from the tree is the final answer.
+    if (estLoc !== undefined) {
+      const result = { ok: true, status: 200, repo, est: true, estLoc, sizeKb };
+      await chrome.storage.local.set({ [key]: { at: Date.now(), result } });
+      return result;
+    }
     return {
       ok: false,
       status: 0,
@@ -128,6 +158,25 @@ async function countRepo(cfg, repo) {
     };
   }
 
+  const count = async () => {
+    const result = await downloadAndCount(cfg, repo, sizeKb);
+    if (result.ok) {
+      await chrome.storage.local.set({ [key]: { at: Date.now(), result } });
+    }
+    return result;
+  };
+
+  if (estLoc === undefined || tabId === undefined) return count();
+
+  // Answer now with the estimate; push the exact count to the tab when it lands.
+  count().then((result) => {
+    chrome.tabs.sendMessage(tabId, { type: "locResult", repo, result }).catch(() => {});
+  });
+  return { ok: true, status: 200, repo, phase: "estimate", estLoc, sizeKb };
+}
+
+async function downloadAndCount(cfg, repo, sizeKb) {
+  const [owner, name] = repo.split("/");
   const url = `https://codeload.github.com/${owner}/${name}/tar.gz/HEAD`;
 
   try {
