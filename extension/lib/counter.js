@@ -63,7 +63,7 @@ export async function countTarball(gzipStream) {
       const pathPtr = wasm.alloc(pathBytes.length);
       const bodyPtr = wasm.alloc(body.length);
       try {
-        // Fresh views each time — allocating can grow memory and detach the
+        // Fresh views each time – allocating can grow memory and detach the
         // previous ArrayBuffer.
         new Uint8Array(wasm.memory.buffer, pathPtr, pathBytes.length).set(pathBytes);
         new Uint8Array(wasm.memory.buffer, bodyPtr, body.length).set(body);

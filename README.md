@@ -9,8 +9,8 @@
 Glock is a chrome extension that displays LOC on GitHub repos. It uses [tokei](https://github.com/XAMPPRocky/tokei) for counting.
 
 Counting runs entirely in the browser: the extension downloads the repository
-archive from GitHub and counts it with tokei compiled to WebAssembly. Nothing —
-including your access token — is sent anywhere except GitHub.
+archive from GitHub and counts it with tokei compiled to WebAssembly. Nothing –
+including your access token – is sent anywhere except GitHub.
 
 ## Layout
 
@@ -31,7 +31,7 @@ rustup target add wasm32-unknown-unknown   # once
 
 tokei 14 doesn't build for wasm. `term_size` uses libc ioctls that don't exist
 there, and `etcetera` depends on `home`, which only supports Windows and Unix.
-Neither is needed by the library — they're only used by tokei's CLI.
+Neither is needed by the library – they're only used by tokei's CLI.
 
 [Our fork](https://github.com/farshed/tokei) makes them optional and adds
 `LanguageType::from_shebang_slice`, so files with no extension can be identified
@@ -41,7 +41,7 @@ patch section and bump the version.
 
 ## Accuracy
 
-The extension counts a tarball, whereas tokei normally walks a checkout — and
+The extension counts a tarball, whereas tokei normally walks a checkout – and
 the walker also decides *which* files to count. Those selection rules (hidden
 files, `.gitignore`/`.ignore`/`.tokeignore`, shebang fallback, UTF-16
 transcoding, embedded-language summarisation) are reproduced in
@@ -54,9 +54,9 @@ on repositories chosen to exercise each rule:
 | `XAMPPRocky/tokei`   | 6,252      | `.tokeignore`, hidden dirs       |
 | `BurntSushi/ripgrep` | 43,980     | `!/.github/` whitelist, shebangs  |
 | `sharkdp/bat`        | 48,608     | UTF-16 files, unknown extensions  |
-| `expressjs/express`  | 16,185     | —                                |
-| `psf/requests`       | 12,027     | —                                |
-| `sindresorhus/got`   | 34,966     | —                                |
+| `expressjs/express`  | 16,185     | –                                |
+| `psf/requests`       | 12,027     | –                                |
+| `sindresorhus/got`   | 34,966     | –                                |
 
 ## Caching
 

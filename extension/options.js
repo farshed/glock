@@ -28,7 +28,7 @@ async function save() {
   });
 
   $("maxRepoMb").value = clamped;
-  flash(clamped < mb ? `Saved — capped at ${LIMIT_MAX_REPO_MB} MB` : "Saved");
+  flash(clamped < mb ? `Saved – capped at ${LIMIT_MAX_REPO_MB} MB` : "Saved");
 }
 
 $("save").addEventListener("click", save);

@@ -31,7 +31,7 @@
 	],
 	"options_page": "options.html",
 	"action": {
-		"default_title": "Glock — click for options",
+		"default_title": "Glock – click for options",
 		"default_icon": {
 			"16": "icons/icon-16.png",
 			"32": "icons/icon-32.png",

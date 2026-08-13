@@ -53,55 +53,82 @@ function authHeaders(cfg) {
   return headers;
 }
 
+function apiError(resp, repo, cfg) {
+  // A 403 with no quota left is a rate limit, not a permissions problem.
+  if (resp.status === 403 && resp.headers.get("x-ratelimit-remaining") === "0") {
+    const reset = Number(resp.headers.get("x-ratelimit-reset")) * 1000;
+    const mins = reset ? Math.max(1, Math.ceil((reset - Date.now()) / 60000)) : null;
+    return {
+      ok: false,
+      status: resp.status,
+      reason: "rate_limited",
+      error: `GitHub rate limit reached${mins ? `, resets in ~${mins} min` : ""}.` +
+        (cfg.pat ? "" : " Adding a token raises it from 60 to 5,000 requests/hour."),
+    };
+  }
+  if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
+    return {
+      ok: false,
+      status: resp.status,
+      reason: "no_access",
+      error: `Cannot access ${repo} (check that it exists and the token has access)`,
+    };
+  }
+  return { ok: false, status: resp.status, reason: "github_error", error: `HTTP ${resp.status}` };
+}
+
 async function countRepo(cfg, repo) {
   const [owner, name] = repo.split("/");
 
-  let meta;
+  // Sum of blob sizes in the default branch (HEAD) — the actual checkout size,
+  // unlike the metadata endpoint's `size`, which counts the full packed history
+  // and over-states it badly. Infinity marks a truncated listing (>100k files).
+  let sizeKb;
   try {
-    const resp = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
-      headers: authHeaders(cfg),
-    });
-    // A 403 with no quota left is a rate limit, not a permissions problem.
-    if (resp.status === 403 && resp.headers.get("x-ratelimit-remaining") === "0") {
-      const reset = Number(resp.headers.get("x-ratelimit-reset")) * 1000;
-      const mins = reset ? Math.max(1, Math.ceil((reset - Date.now()) / 60000)) : null;
-      return {
-        ok: false,
-        status: resp.status,
-        reason: "rate_limited",
-        error: `GitHub rate limit reached${mins ? `, resets in ~${mins} min` : ""}.` +
-          (cfg.pat ? "" : " Adding a token raises it from 60 to 5,000 requests/hour."),
-      };
+    const resp = await fetch(
+      `https://api.github.com/repos/${owner}/${name}/git/trees/HEAD?recursive=1`,
+      { headers: authHeaders(cfg) },
+    );
+    if (resp.ok) {
+      const data = await resp.json();
+      sizeKb = data.truncated
+        ? Infinity
+        : data.tree.reduce((sum, e) => (e.type === "blob" ? sum + (e.size || 0) : sum), 0) / 1024;
+    } else if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
+      // Auth and rate-limit problems would hit the metadata call identically.
+      return apiError(resp, repo, cfg);
     }
-    if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
-      return {
-        ok: false,
-        status: resp.status,
-        reason: "no_access",
-        error: `Cannot access ${repo} (check that it exists and the token has access)`,
-      };
-    }
-    if (!resp.ok) {
-      return { ok: false, status: resp.status, reason: "github_error", error: `HTTP ${resp.status}` };
-    }
-    meta = await resp.json();
-  } catch (e) {
-    return { ok: false, status: 0, reason: "network", error: `Cannot reach GitHub: ${e}` };
+  } catch {
+    // Fall through to the metadata call.
   }
 
-  if (typeof meta.size === "number" && meta.size > cfg.maxRepoKb) {
+  if (sizeKb === undefined) {
+    try {
+      const resp = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
+        headers: authHeaders(cfg),
+      });
+      if (!resp.ok) return apiError(resp, repo, cfg);
+      sizeKb = (await resp.json()).size;
+    } catch (e) {
+      return { ok: false, status: 0, reason: "network", error: `Cannot reach GitHub: ${e}` };
+    }
+  }
+
+  if (typeof sizeKb === "number" && sizeKb > cfg.maxRepoKb) {
     return {
       ok: false,
       status: 0,
       reason: "too_large",
-      error: `${repo} is ~${Math.round(meta.size / 1024)}MB, over the ${
-        Math.round(cfg.maxRepoKb / 1024)
-      }MB limit`,
+      sizeKb,
+      error: sizeKb === Infinity
+        ? `${repo} has too many files to count`
+        : `${repo} is ~${Math.round(sizeKb / 1024)}MB, over the ${
+            Math.round(cfg.maxRepoKb / 1024)
+          }MB limit`,
     };
   }
 
-  const ref = meta.default_branch || "HEAD";
-  const url = `https://codeload.github.com/${owner}/${name}/tar.gz/${ref}`;
+  const url = `https://codeload.github.com/${owner}/${name}/tar.gz/HEAD`;
 
   try {
     const resp = await fetch(url, { headers: cfg.pat ? authHeaders(cfg) : {} });
@@ -114,7 +141,7 @@ async function countRepo(cfg, repo) {
       };
     }
     const counts = await countTarball(resp.body);
-    return { ok: true, status: 200, repo, ...counts };
+    return { ok: true, status: 200, repo, sizeKb, ...counts };
   } catch (e) {
     return { ok: false, status: 0, reason: "count_failed", error: `Count failed: ${e}` };
   }

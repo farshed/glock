@@ -62,7 +62,7 @@ function compile(pattern, base) {
   const prefix = base ? `${base}/` : "";
   const source = anchored ? `^${prefix}${re}` : `^${prefix}(?:.*/)?${re}`;
   // An ignored directory takes its subtree with it. `build/` must match
-  // something beneath the name — a file merely named `build` is not a match.
+  // something beneath the name – a file merely named `build` is not a match.
   const tail = dirOnly ? "(?:/.*)" : "(?:/.*)?";
   return { re: new RegExp(`${source}${tail}$`), negated };
 }

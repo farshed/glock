@@ -1,7 +1,7 @@
 # Glock
 
 A Chrome (MV3) extension that adds a lines-of-code badge next to the repository
-name on every GitHub repo page. Counting happens entirely in the browser — there
+name on every GitHub repo page. Counting happens entirely in the browser – there
 is no server.
 
 ```
@@ -31,16 +31,16 @@ Counting a tarball is not quite the same as counting a checkout, because the
 directory walker tokei normally uses also decides *which* files to count. The
 extension reproduces those rules in `lib/ignore.js` and `lib/counter.js`:
 
-- **Hidden files are skipped** — unless an ignore rule explicitly re-includes
+- **Hidden files are skipped** – unless an ignore rule explicitly re-includes
   them. ripgrep ships an `.ignore` containing `!/.github/` for exactly this.
 - **`.gitignore`, `.ignore`, and `.tokeignore` are honoured**, including
   negation, anchoring, and per-directory precedence.
 - **Extensionless files fall back to shebang detection**, so `ci/build` is
-  counted as a shell script. A file with an *unrecognised* extension does not —
+  counted as a shell script. A file with an *unrecognised* extension does not –
   matching tokei, which only consults the shebang when there is no extension.
 - **BOM-prefixed and UTF-16 files are transcoded** before counting, the same way
   tokei does when it reads a file itself.
-- **Embedded languages are summarised** — fenced code blocks in Markdown and
+- **Embedded languages are summarised** – fenced code blocks in Markdown and
   `<script>`/`<style>` in HTML count toward the total.
 
 These are verified against the native tokei walker; see the repo root README.
@@ -64,9 +64,9 @@ appear. Subsequent views are served from cache (30 minutes).
 
 Click the extension's toolbar icon (or use **Extension options**) to set:
 
-- **Personal Access Token** — a fine-grained token with `Contents: Read-only`,
+- **Personal Access Token** – a fine-grained token with `Contents: Read-only`,
   needed only for private repositories. Stored locally in this browser and sent
   only to GitHub. It also raises the API rate limit from 60 to 5,000 requests
   per hour.
-- **Maximum repository size** — repositories larger than this show no badge,
+- **Maximum repository size** – repositories larger than this show no badge,
   since counting downloads the whole archive. Defaults to 50 MB, up to 500 MB.

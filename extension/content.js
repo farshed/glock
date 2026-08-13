@@ -41,6 +41,14 @@
 
   const fmt = (n) => new Intl.NumberFormat().format(n);
 
+  const fmtSize = (kb) => {
+    if (!Number.isFinite(kb) || kb <= 0) return null;
+    if (kb < 1024) return `${Math.max(1, Math.round(kb))} KB`;
+    const mb = kb / 1024;
+    if (mb < 1024) return `${mb >= 10 ? Math.round(mb) : mb.toFixed(1)} MB`;
+    return `${(mb / 1024).toFixed(1)} GB`;
+  };
+
   const removeBadge = () => document.getElementById(BADGE_ID)?.remove();
 
   function showBadge(repo, nav, res) {
@@ -55,17 +63,23 @@
     badge.dataset.repo = repo;
 
     if (res.ok) {
+      const size = fmtSize(res.sizeKb);
       badge.className = "gh-loc-badge";
-      badge.textContent = `${fmt(res.code)} LOC`;
+      badge.textContent = `${fmt(res.code)} LOC${size ? ` · ~${size}` : ""}`;
       badge.title =
         `Code: ${fmt(res.code)}\n` +
         `Comments: ${fmt(res.comments)}\n` +
         `Blank: ${fmt(res.blanks)}\n` +
         `Total lines: ${fmt(res.total)}` +
+        (size ? `\nEst. size: ${size}` : "") +
         (res.cached ? "\n(cached)" : "");
     } else {
-        badge.className = "gh-loc-badge gh-loc-badge--error";
-      badge.textContent = ERROR_LABELS[res.reason] || "Unavailable";
+        const size = fmtSize(res.sizeKb);
+      badge.className = "gh-loc-badge gh-loc-badge--error";
+      badge.textContent =
+        res.reason === "too_large" && size
+          ? `Too large · ~${size}`
+          : ERROR_LABELS[res.reason] || "Unavailable";
       badge.title = res.error || "Could not count this repository";
     }
 

@@ -44,7 +44,7 @@ pub unsafe extern "C" fn count(
     let body = unsafe { std::slice::from_raw_parts(buf_ptr, buf_len) };
 
     // `from_path` resolves extensionless paths by opening the file to read its
-    // shebang, which cannot work here. Redo that against the bytes we hold —
+    // shebang, which cannot work here. Redo that against the bytes we hold –
     // but only for a path with no extension, matching tokei: an unrecognised
     // extension is not a shebang candidate.
     let language = match LanguageType::from_path(path, &config) {
