@@ -52,6 +52,50 @@
 
   const removeBadge = () => document.getElementById(BADGE_ID)?.remove();
 
+  // Custom hover tooltip; the native title attribute is too easy to miss.
+  function makeTip(res) {
+    const tip = document.createElement("div");
+    tip.className = "gh-loc-tooltip";
+
+    const addRow = (label, value) => {
+      const row = document.createElement("div");
+      row.className = "gh-loc-tooltip-row";
+      const l = document.createElement("span");
+      l.textContent = label;
+      const v = document.createElement("span");
+      v.className = "gh-loc-tooltip-value";
+      v.textContent = value;
+      row.append(l, v);
+      tip.appendChild(row);
+    };
+    const addNote = (text) => {
+      const note = document.createElement("div");
+      note.className = "gh-loc-tooltip-note";
+      note.textContent = text;
+      tip.appendChild(note);
+    };
+
+    const size = fmtSize(res.sizeKb);
+    if (res.ok && res.estLoc !== undefined) {
+      addRow("Code", `~${fmtEst(res.estLoc)}`);
+      if (size) addRow("Est. size", size);
+      addNote(
+        res.est
+          ? "Estimated from file sizes – this repository is over the size limit for exact counting."
+          : "Exact count in progress – the current number is approximate.",
+      );
+    } else if (res.ok) {
+      addRow("Code", fmt(res.code));
+      addRow("Comments", fmt(res.comments));
+      addRow("Blank", fmt(res.blanks));
+      addRow("Total lines", fmt(res.total));
+      if (size) addRow("Est. size", size);
+    } else {
+      addNote(res.error || "Could not count this repository");
+    }
+    return tip;
+  }
+
   function showBadge(repo, nav, res) {
     // The page may have navigated while the request was in flight.
     if (currentRepo() !== repo || !nav.isConnected) return;
@@ -68,37 +112,22 @@
 
     const badge = document.createElement("span");
 
+    const size = fmtSize(res.sizeKb);
     if (res.ok && res.estLoc !== undefined) {
-      const size = fmtSize(res.sizeKb);
       badge.className = "gh-loc-badge";
       badge.textContent = `~${fmtEst(res.estLoc)} LOC${size ? ` · ~${size}` : ""}`;
-      badge.title = res.est
-        ? "Estimated from code file sizes — repo is over the size limit, so it" +
-          " was not downloaded and counted exactly." +
-          (res.cached ? "\n(cached)" : "")
-        : "Estimate — exact count in progress…";
     } else if (res.ok) {
-      const size = fmtSize(res.sizeKb);
       badge.className = "gh-loc-badge";
       badge.textContent = `${fmt(res.code)} LOC${size ? ` · ~${size}` : ""}`;
-      badge.title =
-        `Code: ${fmt(res.code)}\n` +
-        `Comments: ${fmt(res.comments)}\n` +
-        `Blank: ${fmt(res.blanks)}\n` +
-        `Total lines: ${fmt(res.total)}` +
-        (size ? `\nEst. size: ${size}` : "") +
-        (res.cached ? "\n(cached)" : "");
     } else {
-      const size = fmtSize(res.sizeKb);
       badge.className = "gh-loc-badge gh-loc-badge--error";
       badge.textContent =
         res.reason === "too_large" && size
           ? `Too large · ~${size}`
           : ERROR_LABELS[res.reason] || "Unavailable";
-      badge.title = res.error || "Could not count this repository";
     }
 
-    item.appendChild(badge);
+    item.append(badge, makeTip(res));
     nav.appendChild(item);
     centreOnCrumb(badge, nav);
   }
