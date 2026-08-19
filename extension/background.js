@@ -2,7 +2,7 @@ import { countTarball } from "./lib/counter.js";
 
 const DEFAULTS = {
   pat: "",
-  ttlMinutes: 30,
+  ttlMinutes: 15,
   // GitHub reports repo size in KB.
   maxRepoKb: 50 * 1024,
 };

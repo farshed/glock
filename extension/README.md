@@ -58,7 +58,7 @@ These are verified against the native tokei walker; see the repo root README.
 3. Visit any repo, e.g. `https://github.com/BurntSushi/ripgrep`.
 
 The first view of a repo downloads its archive, so the badge takes a moment to
-appear. Subsequent views are served from cache (30 minutes).
+appear. Subsequent views are served from cache (15 minutes).
 
 ## Options
 
