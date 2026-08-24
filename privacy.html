@@ -39,26 +39,22 @@
 
     <h2>How it works</h2>
     <p>
-      When you open a repository page, the extension asks GitHub for the
-      repository's size, downloads its archive, and counts the lines inside your
-      browser using a WebAssembly build of
-      <a href="https://github.com/XAMPPRocky/tokei" target="_blank" rel="noreferrer">tokei</a>.
-      Repository contents are held in memory only for as long as the count takes,
-      and are never written to disk or sent anywhere.
+      When you open a repository page, the extension fetches the repository from
+      GitHub and counts its lines entirely inside your browser. Repository
+      contents are held in memory only for as long as the count takes, and are
+      never written to disk or sent anywhere.
     </p>
     <p>
-      The only network requests it makes are to
-      <code>api.github.com</code> and <code>codeload.github.com</code>. Those
-      requests are subject to
+      The only network requests it makes are to GitHub. Those requests are
+      subject to
       <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noreferrer">GitHub's privacy policy</a>.
     </p>
 
     <h2>Your GitHub token</h2>
     <p>
       You can optionally add a personal access token so private repositories can
-      be counted. It is stored locally in your browser and sent only to GitHub,
-      as the authorization header on the requests above. It is never sent to us
-      or to anyone else.
+      be counted. It is stored locally in your browser and sent only to GitHub.
+      It is never sent to us or to anyone else.
     </p>
     <p>
       Delete it at any time by clearing the field in the extension's options, or
@@ -70,7 +66,8 @@
       <li>Your access token, if you added one.</li>
       <li>Your maximum repository size setting.</li>
       <li>
-        Line counts for repositories you have viewed, cached for 15 minutes.
+        Line counts for repositories you have viewed, cached briefly so repeat
+        visits are instant.
       </li>
     </ul>
     <p>
