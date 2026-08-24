@@ -32,13 +32,19 @@ async function getConfig() {
 
 const cacheKey = (repo) => `loc:${repo.toLowerCase()}`;
 
+// Every failure result goes through here so it shows up in the worker console.
+function fail(result) {
+  console.error(`[glock] ${result.error || result.reason}`, result);
+  return result;
+}
+
 chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "getLoc" && typeof msg.repo === "string") {
     handleGetLoc(msg.repo, sender.tab?.id)
       .then(sendResponse)
-      .catch((err) => sendResponse({ ok: false, status: 0, error: String(err) }));
+      .catch((err) => sendResponse(fail({ ok: false, status: 0, error: String(err) })));
     return true; // keep the message channel open for the async response
   }
   return false;
@@ -55,23 +61,23 @@ function apiError(resp, repo, cfg) {
   if (resp.status === 403 && resp.headers.get("x-ratelimit-remaining") === "0") {
     const reset = Number(resp.headers.get("x-ratelimit-reset")) * 1000;
     const mins = reset ? Math.max(1, Math.ceil((reset - Date.now()) / 60000)) : null;
-    return {
+    return fail({
       ok: false,
       status: resp.status,
       reason: "rate_limited",
       error: `GitHub rate limit reached${mins ? `, resets in ~${mins} min` : ""}.` +
         (cfg.pat ? "" : " Adding a token raises it from 60 to 5,000 requests/hour."),
-    };
+    });
   }
   if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
-    return {
+    return fail({
       ok: false,
       status: resp.status,
       reason: "no_access",
       error: `Cannot access ${repo} (check that it exists and the token has access)`,
-    };
+    });
   }
-  return { ok: false, status: resp.status, reason: "github_error", error: `HTTP ${resp.status}` };
+  return fail({ ok: false, status: resp.status, reason: "github_error", error: `HTTP ${resp.status}` });
 }
 
 function estimateLoc(tree) {
@@ -122,8 +128,9 @@ async function handleGetLoc(repo, tabId) {
       // Auth and rate-limit problems would hit the metadata call identically.
       return apiError(resp, repo, cfg);
     }
-  } catch {
+  } catch (e) {
     // Fall through to the metadata call.
+    console.warn(`[glock] Tree fetch failed for ${repo}, falling back to metadata:`, e);
   }
 
   if (sizeKb === undefined) {
@@ -134,7 +141,7 @@ async function handleGetLoc(repo, tabId) {
       if (!resp.ok) return apiError(resp, repo, cfg);
       sizeKb = (await resp.json()).size;
     } catch (e) {
-      return { ok: false, status: 0, reason: "network", error: `Cannot reach GitHub: ${e}` };
+      return fail({ ok: false, status: 0, reason: "network", error: `Cannot reach GitHub: ${e}` });
     }
   }
 
@@ -145,7 +152,7 @@ async function handleGetLoc(repo, tabId) {
       await chrome.storage.local.set({ [key]: { at: Date.now(), result } });
       return result;
     }
-    return {
+    return fail({
       ok: false,
       status: 0,
       reason: "too_large",
@@ -155,7 +162,7 @@ async function handleGetLoc(repo, tabId) {
         : `${repo} is ~${Math.round(sizeKb / 1024)}MB, over the ${
             Math.round(cfg.maxRepoKb / 1024)
           }MB limit`,
-    };
+    });
   }
 
   const count = async () => {
@@ -170,7 +177,9 @@ async function handleGetLoc(repo, tabId) {
 
   // Answer now with the estimate; push the exact count to the tab when it lands.
   count().then((result) => {
-    chrome.tabs.sendMessage(tabId, { type: "locResult", repo, result }).catch(() => {});
+    chrome.tabs.sendMessage(tabId, { type: "locResult", repo, result }).catch((e) => {
+      console.warn(`[glock] Could not push exact count to tab ${tabId}:`, e);
+    });
   });
   return { ok: true, status: 200, repo, phase: "estimate", estLoc, sizeKb };
 }
@@ -182,16 +191,16 @@ async function downloadAndCount(cfg, repo, sizeKb) {
   try {
     const resp = await fetch(url, { headers: cfg.pat ? authHeaders(cfg) : {} });
     if (!resp.ok) {
-      return {
+      return fail({
         ok: false,
         status: resp.status,
         reason: "download_failed",
         error: `Tarball fetch failed: HTTP ${resp.status}`,
-      };
+      });
     }
     const counts = await countTarball(resp.body);
     return { ok: true, status: 200, repo, sizeKb, ...counts };
   } catch (e) {
-    return { ok: false, status: 0, reason: "count_failed", error: `Count failed: ${e}` };
+    return fail({ ok: false, status: 0, reason: "count_failed", error: `Count failed: ${e}` });
   }
 }

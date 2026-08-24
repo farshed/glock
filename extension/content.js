@@ -164,8 +164,9 @@
     try {
       const res = await chrome.runtime.sendMessage({ type: "getLoc", repo });
       if (res) showBadge(repo, nav, res);
-    } catch (_e) {
+    } catch (e) {
       // Worker unreachable (e.g. the extension reloaded mid-request).
+      console.error("[glock] Could not reach the extension worker:", e);
     }
   }
 

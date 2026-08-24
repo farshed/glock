@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Glock",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Shows a lines-of-code badge next to every GitHub repository name, counted locally in your browser.",
 	"permissions": ["storage"],
 	"host_permissions": [
