@@ -22,7 +22,7 @@ Counting runs entirely in the browser: the extension downloads the repository ar
 
 ```
 rustup target add wasm32-unknown-unknown   # once
-./scripts/build-wasm.sh                    # writes extension/tokei.wasm
+./scripts/build-wasm.sh
 ```
 
 ## Caching
