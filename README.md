@@ -10,14 +10,6 @@ Glock is a chrome extension that displays LOC on GitHub repos. It uses [tokei](h
 
 Counting runs entirely in the browser: the extension downloads the repository archive from GitHub and counts it with tokei compiled to WebAssembly.
 
-## Layout
-
-| Path         | What it is                                                    |
-| ------------ | ------------------------------------------------------------- |
-| `extension/` | The Chrome extension. See `extension/README.md`.               |
-| `src/`       | Rust shim exposing tokei's counting core to JavaScript.   |
-| `scripts/`   | `build-wasm.sh` to build the module, `package.sh` to zip the ext.  |
-
 ## Building
 
 ```
