@@ -109,6 +109,9 @@ async function handleGetLoc(repo, tabId) {
   // Sum of blob sizes in the default branch (HEAD) — the actual checkout size,
   // unlike the metadata endpoint's `size`, which counts the full packed history
   // and over-states it badly. Infinity marks a truncated listing (>100k files).
+  // `gateKb` is what the size cap is checked against; `sizeKb` is only ever the
+  // exact tree sum and is the only size shown to the user.
+  let gateKb;
   let sizeKb;
   let estLoc;
   try {
@@ -119,9 +122,10 @@ async function handleGetLoc(repo, tabId) {
     if (resp.ok) {
       const data = await resp.json();
       if (data.truncated) {
-        sizeKb = Infinity;
+        gateKb = Infinity;
       } else {
         sizeKb = data.tree.reduce((sum, e) => (e.type === "blob" ? sum + (e.size || 0) : sum), 0) / 1024;
+        gateKb = sizeKb;
         estLoc = estimateLoc(data.tree);
       }
     } else if (resp.status === 401 || resp.status === 403 || resp.status === 404) {
@@ -133,19 +137,20 @@ async function handleGetLoc(repo, tabId) {
     console.warn(`[glock] Tree fetch failed for ${repo}, falling back to metadata:`, e);
   }
 
-  if (sizeKb === undefined) {
+  if (gateKb === undefined) {
+    // Metadata size is only good enough for the cap check; it is never displayed.
     try {
       const resp = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
         headers: authHeaders(cfg),
       });
       if (!resp.ok) return apiError(resp, repo, cfg);
-      sizeKb = (await resp.json()).size;
+      gateKb = (await resp.json()).size;
     } catch (e) {
       return fail({ ok: false, status: 0, reason: "network", error: `Cannot reach GitHub: ${e}` });
     }
   }
 
-  if (typeof sizeKb === "number" && sizeKb > cfg.maxRepoKb) {
+  if (typeof gateKb === "number" && gateKb > cfg.maxRepoKb) {
     // Too large to download — the estimate from the tree is the final answer.
     if (estLoc !== undefined) {
       const result = { ok: true, status: 200, repo, est: true, estLoc, sizeKb };
@@ -157,9 +162,9 @@ async function handleGetLoc(repo, tabId) {
       status: 0,
       reason: "too_large",
       sizeKb,
-      error: sizeKb === Infinity
+      error: gateKb === Infinity
         ? `${repo} has too many files to count`
-        : `${repo} is ~${Math.round(sizeKb / 1024)}MB, over the ${
+        : `${repo} is ~${Math.round(gateKb / 1024)}MB, over the ${
             Math.round(cfg.maxRepoKb / 1024)
           }MB limit`,
     });

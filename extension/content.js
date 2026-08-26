@@ -78,18 +78,18 @@
     const size = fmtSize(res.sizeKb);
     if (res.ok && res.estLoc !== undefined) {
       addRow("Code", `~${fmtEst(res.estLoc)}`);
-      if (size) addRow("Est. size", size);
+      if (size) addRow("Size", size);
       addNote(
         res.est
-          ? "Estimated from file sizes – this repository is over the size limit for exact counting."
-          : "Exact count in progress – the current number is approximate.",
+          ? "LOC count approximate – this repo is over the size limit for exact counting."
+          : "Count in progress – current number is approximate.",
       );
     } else if (res.ok) {
       addRow("Code", fmt(res.code));
       addRow("Comments", fmt(res.comments));
       addRow("Blank", fmt(res.blanks));
       addRow("Total lines", fmt(res.total));
-      if (size) addRow("Est. size", size);
+      if (size) addRow("Size", size);
     } else {
       addNote(res.error || "Could not count this repository");
     }
@@ -115,15 +115,15 @@
     const size = fmtSize(res.sizeKb);
     if (res.ok && res.estLoc !== undefined) {
       badge.className = "gh-loc-badge";
-      badge.textContent = `~${fmtEst(res.estLoc)} LOC${size ? ` · ~${size}` : ""}`;
+      badge.textContent = `~${fmtEst(res.estLoc)} LOC${size ? ` · ${size}` : ""}`;
     } else if (res.ok) {
       badge.className = "gh-loc-badge";
-      badge.textContent = `${fmt(res.code)} LOC${size ? ` · ~${size}` : ""}`;
+      badge.textContent = `${fmt(res.code)} LOC${size ? ` · ${size}` : ""}`;
     } else {
       badge.className = "gh-loc-badge gh-loc-badge--error";
       badge.textContent =
         res.reason === "too_large" && size
-          ? `Too large · ~${size}`
+          ? `Too large · ${size}`
           : ERROR_LABELS[res.reason] || "Unavailable";
     }
 
