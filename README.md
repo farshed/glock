@@ -2,6 +2,7 @@
   <img src="assets/glock_logo_optimized.png" alt="Glock logo" width="200" />
   <h1>Glock</h1>
   <p>GitHub Lines-Of-Code Kounter.</p>
+  <p><a href="https://chromewebstore.google.com/detail/glfjdpepjbakhenjcgmnmcebpfhkpmch"><strong>Install for Chrome</strong></a></p>
 </div>
 
 ---
